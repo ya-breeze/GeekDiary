@@ -1,6 +1,7 @@
 package com.example.geekdiary.data.local
 
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -14,15 +15,15 @@ class SettingsManager @Inject constructor(
     }
     
     suspend fun setServerUrl(url: String) {
-        sharedPreferences.edit()
-            .putString(KEY_SERVER_URL, url)
-            .apply()
+        sharedPreferences.edit {
+            putString(KEY_SERVER_URL, url)
+        }
     }
     
     suspend fun resetToDefaults() {
-        sharedPreferences.edit()
-            .remove(KEY_SERVER_URL)
-            .apply()
+        sharedPreferences.edit {
+            remove(KEY_SERVER_URL)
+        }
     }
     
     companion object {

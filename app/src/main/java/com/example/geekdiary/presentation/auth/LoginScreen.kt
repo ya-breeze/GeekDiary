@@ -29,7 +29,7 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
     
-    var email by remember { mutableStateOf("test") }
+    var email by remember { mutableStateOf("test@example.com") }
     var password by remember { mutableStateOf("test") }
     var passwordVisible by remember { mutableStateOf(false) }
     

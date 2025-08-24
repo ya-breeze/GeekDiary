@@ -62,9 +62,9 @@ class AssetRepositoryImpl @Inject constructor(
             assetDao.insertAsset(assetEntity)
             
             // Download from backend
-            return when (val result = safeApiCall { assetApiService.downloadAsset(filename) }) {
+            return when (val result = safeApiCall<okhttp3.ResponseBody> { assetApiService.downloadAsset(filename) }) {
                 is NetworkResult.Success -> {
-                    val responseBody = result.data.body()
+                    val responseBody = result.data
                     if (responseBody != null) {
                         // Save to local storage
                         val localFilePath = assetStorageManager.saveAsset(filename, responseBody)
@@ -138,7 +138,7 @@ class AssetRepositoryImpl @Inject constructor(
             val requestBody = file.asRequestBody(mediaType)
             val multipartBody = MultipartBody.Part.createFormData("asset", file.name, requestBody)
             
-            return when (val result = safeApiCall { assetApiService.uploadAsset(multipartBody) }) {
+            return when (val result = safeApiCall<com.example.geekdiary.data.remote.dto.AssetUploadResponseDto> { assetApiService.uploadAsset(multipartBody) }) {
                 is NetworkResult.Success -> {
                     val backendFilename = result.data.filename
                     NetworkResult.Success(backendFilename)

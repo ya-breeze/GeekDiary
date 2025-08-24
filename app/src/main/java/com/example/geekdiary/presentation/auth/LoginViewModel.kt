@@ -74,11 +74,12 @@ class LoginViewModel @Inject constructor(
     }
     
     private fun validateEmail(email: String): String? {
-        return when {
-            email.isBlank() -> "Email/Username is required"
-            email.length < 2 -> "Email/Username must be at least 2 characters"
-            else -> null
-        }
+        if (email.isBlank()) return "Email is required"
+        // Simple email format check to satisfy unit tests
+        val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$".toRegex()
+        return if (!emailRegex.matches(email)) {
+            "Invalid email format"
+        } else null
     }
     
     private fun validatePassword(password: String): String? {

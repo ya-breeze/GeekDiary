@@ -54,10 +54,10 @@ fun DateDisplayComponent(
             
             // Date display with click to open date picker
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .clickable { showDatePicker = true }
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = currentDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)),

@@ -7,14 +7,6 @@ import androidx.room.Index
 
 @Entity(
     tableName = "assets",
-    foreignKeys = [
-        ForeignKey(
-            entity = DiaryEntryEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["diaryEntryId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ],
     indices = [
         Index(value = ["diaryEntryId"]),
         Index(value = ["filename"], unique = true)
@@ -34,14 +26,6 @@ data class AssetEntity(
 
 @Entity(
     tableName = "pending_asset_downloads",
-    foreignKeys = [
-        ForeignKey(
-            entity = DiaryEntryEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["diaryEntryId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ],
     indices = [
         Index(value = ["diaryEntryId"]),
         Index(value = ["filename"])
@@ -61,14 +45,6 @@ data class PendingAssetDownloadEntity(
 
 @Entity(
     tableName = "pending_asset_uploads",
-    foreignKeys = [
-        ForeignKey(
-            entity = DiaryEntryEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["diaryEntryId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ],
     indices = [
         Index(value = ["diaryEntryId"])
     ]

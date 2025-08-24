@@ -1,6 +1,7 @@
 package com.example.geekdiary.data.local
 
 import android.content.Context
+import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -25,9 +26,9 @@ class TokenManager @Inject constructor(
     )
     
     suspend fun saveToken(token: String) {
-        sharedPreferences.edit()
-            .putString(KEY_TOKEN, token)
-            .apply()
+        sharedPreferences.edit {
+            putString(KEY_TOKEN, token)
+        }
     }
     
     suspend fun getToken(): String? {
@@ -35,16 +36,16 @@ class TokenManager @Inject constructor(
     }
     
     suspend fun clearToken() {
-        sharedPreferences.edit()
-            .remove(KEY_TOKEN)
-            .apply()
+        sharedPreferences.edit {
+            remove(KEY_TOKEN)
+        }
     }
     
     suspend fun saveCredentials(email: String, password: String) {
-        sharedPreferences.edit()
-            .putString(KEY_EMAIL, email)
-            .putString(KEY_PASSWORD, password)
-            .apply()
+        sharedPreferences.edit {
+            putString(KEY_EMAIL, email)
+            putString(KEY_PASSWORD, password)
+        }
     }
     
     suspend fun getCredentials(): Pair<String, String>? {
@@ -59,14 +60,16 @@ class TokenManager @Inject constructor(
     }
     
     suspend fun clearCredentials() {
-        sharedPreferences.edit()
-            .remove(KEY_EMAIL)
-            .remove(KEY_PASSWORD)
-            .apply()
+        sharedPreferences.edit {
+            remove(KEY_EMAIL)
+            remove(KEY_PASSWORD)
+        }
     }
     
     suspend fun clearAll() {
-        sharedPreferences.edit().clear().apply()
+        sharedPreferences.edit {
+            clear()
+        }
     }
     
     companion object {

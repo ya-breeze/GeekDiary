@@ -17,6 +17,7 @@ import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.*
+import io.mockk.mockk
 import retrofit2.Response
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -80,7 +81,7 @@ class AuthRepositoryImplTest {
         val authData = AuthData("test@example.com", "wrong-password")
         
         whenever(authApiService.authorize(any<AuthDataDto>()))
-            .thenReturn(Response.error(401, mock()))
+            .thenReturn(Response.error(401, mockk<okhttp3.ResponseBody>(relaxed = true)))
         
         // When
         val result = authRepository.login(authData)

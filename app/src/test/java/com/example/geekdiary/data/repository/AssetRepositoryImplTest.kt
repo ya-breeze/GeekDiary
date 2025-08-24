@@ -95,19 +95,23 @@ class AssetRepositoryImplTest {
         // Given
         val filename = "test.jpg"
         val diaryEntryId = "entry-1"
-        
+
         coEvery { assetDao.getAssetByFilename(filename) } returns null
-        coEvery { assetApiService.downloadAsset(filename) } throws Exception("Network error")
+        coEvery { assetApiService.downloadAsset(filename) } returns mockk<retrofit2.Response<okhttp3.ResponseBody>> {
+            every { isSuccessful } returns false
+            every { code() } returns 500
+            every { errorBody() } returns null
+        }
         coEvery { assetDao.insertAsset(any()) } just Runs
         coEvery { assetDao.updateDownloadStatus(any(), any()) } just Runs
-        
+
         // When
         val result = assetRepository.downloadAsset(filename, diaryEntryId)
-        
+
         // Then
-        assertTrue(result is NetworkResult.Error)
-        
-        coVerify { assetDao.updateDownloadStatus(any(), AssetDownloadStatus.FAILED.name) }
+        assertTrue("Expected NetworkResult.Error but got $result", result is NetworkResult.Error)
+
+        coVerify { assetDao.updateDownloadStatus(any(), AssetDownloadStatus.FAILED.name, any()) }
     }
     
     @Test

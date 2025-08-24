@@ -15,9 +15,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
-import coil.request.ImageRequest
+import android.graphics.BitmapFactory
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.asImageBitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.example.geekdiary.R
 import java.io.File
 
@@ -34,7 +36,7 @@ fun AssetDisplayComponent(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -63,18 +65,11 @@ fun AssetDisplayComponent(
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(file)
-                                .crossfade(true)
-                                .build(),
+                        LocalImage(
+                            file = file,
                             contentDescription = contentDescription,
-                            contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize(),
-                            onState = { state ->
-                                onLoadingStateChange?.invoke(state is AsyncImagePainter.State.Loading)
-                            },
-                            error = painterResource(R.drawable.ic_image_placeholder)
+                            onLoadingStateChange = onLoadingStateChange
                         )
                     }
                 } else {
@@ -91,18 +86,11 @@ fun AssetDisplayComponent(
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(assetPath)
-                            .crossfade(true)
-                            .build(),
+                    RemoteImage(
+                        url = assetPath,
                         contentDescription = contentDescription,
-                        contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
-                        onState = { state ->
-                            onLoadingStateChange?.invoke(state is AsyncImagePainter.State.Loading)
-                        },
-                        error = painterResource(R.drawable.ic_image_placeholder)
+                        onLoadingStateChange = onLoadingStateChange
                     )
                 }
             }
@@ -146,7 +134,7 @@ private fun StubAssetPlaceholder(
     ) {
         Icon(
             painter = painterResource(
-                if (isVideo) R.drawable.ic_video_placeholder 
+                if (isVideo) R.drawable.ic_video_placeholder
                 else R.drawable.ic_image_placeholder
             ),
             contentDescription = null,
@@ -175,7 +163,7 @@ private fun ErrorAssetPlaceholder(
     ) {
         Icon(
             painter = painterResource(
-                if (isVideo) R.drawable.ic_video_placeholder 
+                if (isVideo) R.drawable.ic_video_placeholder
                 else R.drawable.ic_image_placeholder
             ),
             contentDescription = null,
@@ -210,7 +198,7 @@ private fun VideoThumbnailComponent(
             modifier = Modifier.size(64.dp),
             tint = Color.White
         )
-        
+
         // Play button overlay
         Surface(
             modifier = Modifier
@@ -229,4 +217,52 @@ private fun VideoThumbnailComponent(
             )
         }
     }
+}
+
+@Composable
+private fun LocalImage(
+    file: File,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    onLoadingStateChange: ((Boolean) -> Unit)? = null
+) {
+    var bitmapState by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(file.absolutePath) {
+        onLoadingStateChange?.invoke(true)
+        isLoading = true
+        val bmp = withContext(Dispatchers.IO) {
+            try {
+                BitmapFactory.decodeFile(file.absolutePath)
+            } catch (e: Exception) { null }
+        }
+        bitmapState = bmp
+        isLoading = false
+        onLoadingStateChange?.invoke(false)
+    }
+
+    if (isLoading) {
+        LoadingAssetPlaceholder(isVideo = false)
+    } else if (bitmapState != null) {
+        androidx.compose.foundation.Image(
+            bitmap = bitmapState!!.asImageBitmap(),
+            contentDescription = contentDescription,
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+        )
+    } else {
+        ErrorAssetPlaceholder(isVideo = false)
+    }
+}
+
+@Composable
+private fun RemoteImage(
+    url: String,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    onLoadingStateChange: ((Boolean) -> Unit)? = null
+) {
+    // Fallback: for now, show placeholder since no image loader is integrated
+    StubAssetPlaceholder(isVideo = false, modifier = modifier)
 }

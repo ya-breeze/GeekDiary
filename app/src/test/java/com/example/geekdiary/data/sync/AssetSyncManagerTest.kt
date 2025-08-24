@@ -84,16 +84,18 @@ class AssetSyncManagerTest {
         )
         
         coEvery { pendingAssetDownloadDao.getPendingDownloads() } returns pendingDownloads
-        coEvery { pendingAssetDownloadDao.updateDownloadStatus(any(), any()) } just Runs
+        coEvery { pendingAssetDownloadDao.updateDownloadStatus(any(), any(), any()) } just Runs
         coEvery { assetRepository.downloadAsset("test.jpg", "entry-1") } returns NetworkResult.Success(downloadedAsset)
         coEvery { pendingAssetDownloadDao.deletePendingDownload(any()) } just Runs
-        
+
         // When
         val result = assetSyncManager.downloadPendingAssets(maxConcurrentDownloads = 1)
-        
+
         // Then
         assertEquals(1, result)
         coVerify { assetRepository.downloadAsset("test.jpg", "entry-1") }
+        coVerify { pendingAssetDownloadDao.updateDownloadStatus("pending-1", "DOWNLOADING", any()) }
+        coVerify { pendingAssetDownloadDao.updateDownloadStatus("pending-1", "COMPLETED", any()) }
         coVerify { pendingAssetDownloadDao.deletePendingDownload(any()) }
     }
     
@@ -111,18 +113,18 @@ class AssetSyncManagerTest {
         )
         
         coEvery { pendingAssetDownloadDao.getPendingDownloads() } returns pendingDownloads
-        coEvery { pendingAssetDownloadDao.updateDownloadStatus(any(), any()) } just Runs
+        coEvery { pendingAssetDownloadDao.updateDownloadStatus(any(), any(), any()) } just Runs
         coEvery { assetRepository.downloadAsset("test.jpg", "entry-1") } returns NetworkResult.Error(
             com.example.geekdiary.data.remote.NetworkException.UnknownError(Exception("Network error"))
         )
-        coEvery { pendingAssetDownloadDao.updateDownloadFailure(any(), any(), any(), any()) } just Runs
-        
+        coEvery { pendingAssetDownloadDao.updateDownloadFailure(any(), any(), any(), any(), any()) } just Runs
+
         // When
         val result = assetSyncManager.downloadPendingAssets(maxConcurrentDownloads = 1)
-        
+
         // Then
         assertEquals(0, result)
-        coVerify { pendingAssetDownloadDao.updateDownloadFailure("pending-1", "FAILED", 1, "Network error") }
+        coVerify { pendingAssetDownloadDao.updateDownloadFailure("pending-1", "FAILED", 1, "Unknown error", any()) }
     }
     
     @Test
@@ -147,16 +149,18 @@ class AssetSyncManagerTest {
         )
         
         coEvery { pendingAssetDownloadDao.getFailedDownloadsForRetry() } returns failedDownloads
-        coEvery { pendingAssetDownloadDao.updateDownloadStatus(any(), any()) } just Runs
+        coEvery { pendingAssetDownloadDao.updateDownloadStatus(any(), any(), any()) } just Runs
         coEvery { assetRepository.downloadAsset("test.jpg", "entry-1") } returns NetworkResult.Success(downloadedAsset)
         coEvery { pendingAssetDownloadDao.deletePendingDownload(any()) } just Runs
-        
+
         // When
         val result = assetSyncManager.retryFailedDownloads()
-        
+
         // Then
         assertEquals(1, result)
         coVerify { assetRepository.downloadAsset("test.jpg", "entry-1") }
+        coVerify { pendingAssetDownloadDao.updateDownloadStatus("failed-1", "DOWNLOADING", any()) }
+        coVerify { pendingAssetDownloadDao.updateDownloadStatus("failed-1", "COMPLETED", any()) }
         coVerify { pendingAssetDownloadDao.deletePendingDownload(any()) }
     }
     

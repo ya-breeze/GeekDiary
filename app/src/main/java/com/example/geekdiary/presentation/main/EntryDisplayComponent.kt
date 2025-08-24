@@ -108,8 +108,8 @@ fun EntryDisplayComponent(
             if (entry.isLocal || entry.needsSync) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (entry.isLocal) {
                         AssistChip(

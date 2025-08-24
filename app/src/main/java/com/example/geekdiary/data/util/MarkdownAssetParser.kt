@@ -1,12 +1,15 @@
 package com.example.geekdiary.data.util
 
 import java.util.regex.Pattern
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Utility class for parsing Markdown content to extract asset references
  * and transform URLs between backend and local formats.
  */
-class MarkdownAssetParser {
+@Singleton
+class MarkdownAssetParser @Inject constructor() {
     
     companion object {
         // Regex pattern to match ![](filename.ext) format

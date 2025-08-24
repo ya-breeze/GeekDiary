@@ -3,7 +3,6 @@ package com.example.geekdiary.data.local
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -17,15 +16,11 @@ class PermissionManager @Inject constructor(
     companion object {
         const val STORAGE_PERMISSION_REQUEST_CODE = 1001
         
-        val REQUIRED_STORAGE_PERMISSIONS = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13+ doesn't need WRITE_EXTERNAL_STORAGE for app-specific directories
-            emptyArray<String>()
-        } else {
-            arrayOf(
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            )
-        }
+        // Since minSdk is 34 (Android 14), we use modern media permissions
+        val REQUIRED_STORAGE_PERMISSIONS = arrayOf(
+            Manifest.permission.READ_MEDIA_IMAGES,
+            Manifest.permission.READ_MEDIA_VIDEO
+        )
     }
     
     /**
@@ -33,11 +28,7 @@ class PermissionManager @Inject constructor(
      * @return True if all required storage permissions are granted
      */
     fun hasStoragePermissions(): Boolean {
-        // For Android 13+, we don't need storage permissions for app-specific directories
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            return true
-        }
-        
+        // Since minSdk is 34, check modern media permissions
         return REQUIRED_STORAGE_PERMISSIONS.all { permission ->
             ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
         }
@@ -57,10 +48,7 @@ class PermissionManager @Inject constructor(
      * @return Array of permissions that need to be requested
      */
     fun getRequiredStoragePermissions(): Array<String> {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            return emptyArray()
-        }
-        
+        // Since minSdk is 34, return missing modern media permissions
         return REQUIRED_STORAGE_PERMISSIONS.filter { permission ->
             ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED
         }.toTypedArray()
@@ -72,10 +60,7 @@ class PermissionManager @Inject constructor(
      * @return True if rationale should be shown
      */
     fun shouldShowStoragePermissionRationale(activity: androidx.activity.ComponentActivity): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            return false
-        }
-        
+        // Since minSdk is 34, check rationale for modern media permissions
         return REQUIRED_STORAGE_PERMISSIONS.any { permission ->
             activity.shouldShowRequestPermissionRationale(permission)
         }
