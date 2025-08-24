@@ -1,7 +1,9 @@
 package com.example.geekdiary.di
 
 import com.example.geekdiary.data.local.TokenManager
+import com.example.geekdiary.data.remote.api.AssetApiService
 import com.example.geekdiary.data.remote.api.AuthApiService
+import com.example.geekdiary.data.local.SettingsManager
 import com.example.geekdiary.data.remote.api.DiaryApiService
 import com.example.geekdiary.data.remote.api.SyncApiService
 import com.example.geekdiary.data.remote.api.UserApiService
@@ -14,6 +16,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import kotlinx.coroutines.runBlocking
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
@@ -60,10 +63,15 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(
         okHttpClient: OkHttpClient,
-        moshi: Moshi
+        moshi: Moshi,
+        settingsManager: SettingsManager
     ): Retrofit {
+        // Note: This creates a static Retrofit instance. For dynamic URL changes,
+        // the app needs to be restarted. For runtime URL changes, consider using
+        // a dynamic base URL interceptor.
+        val baseUrl = runBlocking { settingsManager.getServerUrl() }
         return Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/")
             .client(okHttpClient)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
@@ -91,5 +99,11 @@ object NetworkModule {
     @Singleton
     fun provideSyncApiService(retrofit: Retrofit): SyncApiService {
         return retrofit.create(SyncApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAssetApiService(retrofit: Retrofit): AssetApiService {
+        return retrofit.create(AssetApiService::class.java)
     }
 }

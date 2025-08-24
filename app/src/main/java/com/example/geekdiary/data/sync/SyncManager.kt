@@ -20,7 +20,11 @@ data class SyncStatus(
     val isSyncing: Boolean = false,
     val lastSyncTime: Long? = null,
     val pendingChanges: Int = 0,
-    val error: String? = null
+    val error: String? = null,
+    val assetSyncInProgress: Boolean = false,
+    val pendingAssetDownloads: Int = 0,
+    val failedAssetDownloads: Int = 0,
+    val assetSyncError: String? = null
 )
 
 @Singleton
@@ -28,7 +32,9 @@ class SyncManager @Inject constructor(
     private val syncRepository: SyncRepository,
     private val syncDao: SyncDao,
     private val userDao: UserDao,
-    private val diaryEntryDao: DiaryEntryDao
+    private val diaryEntryDao: DiaryEntryDao,
+    private val assetSyncManager: AssetSyncManager,
+    private val assetReferenceTracker: AssetReferenceTracker
 ) {
     
     private val _syncStatus = MutableStateFlow(SyncStatus())
@@ -56,10 +62,19 @@ class SyncManager @Inject constructor(
                     val syncResult = result.data
                     
                     // Apply changes to local database
+                    val syncedEntries = mutableListOf<com.example.geekdiary.domain.model.DiaryEntry>()
                     for (change in syncResult.changes) {
-                        applyRemoteChange(change)
+                        val syncedEntry = applyRemoteChange(change)
+                        if (syncedEntry != null) {
+                            syncedEntries.add(syncedEntry)
+                        }
                     }
-                    
+
+                    // Process assets for synced entries
+                    if (syncedEntries.isNotEmpty()) {
+                        performAssetSync(syncedEntries)
+                    }
+
                     // Update sync state
                     val newSyncState = syncState.copy(
                         lastSyncId = syncResult.changes.maxOfOrNull { it.id } ?: syncState.lastSyncId,
@@ -67,13 +82,13 @@ class SyncManager @Inject constructor(
                         syncInProgress = false
                     )
                     syncDao.insertSyncState(newSyncState)
-                    
+
                     _syncStatus.value = _syncStatus.value.copy(
                         isSyncing = false,
                         lastSyncTime = System.currentTimeMillis(),
                         pendingChanges = syncDao.getPendingChangesCount(user.id)
                     )
-                    
+
                     return NetworkResult.Success(Unit)
                 }
                 is NetworkResult.Error -> {
@@ -98,9 +113,9 @@ class SyncManager @Inject constructor(
         }
     }
     
-    private suspend fun applyRemoteChange(change: SyncChange) {
-        val user = userDao.getCurrentUser() ?: return
-        
+    private suspend fun applyRemoteChange(change: SyncChange): com.example.geekdiary.domain.model.DiaryEntry? {
+        val user = userDao.getCurrentUser() ?: return null
+
         when (change.operationType) {
             OperationType.CREATED, OperationType.UPDATED -> {
                 change.itemSnapshot?.let { entry ->
@@ -110,12 +125,20 @@ class SyncManager @Inject constructor(
                         lastSyncId = change.id
                     )
                     diaryEntryDao.insertEntry(entity)
+                    return entry
                 }
             }
             OperationType.DELETED -> {
+                // Get the entry before deleting for asset cleanup
+                val existingEntry = diaryEntryDao.getEntryByDate(user.id, change.date.toString())
+                if (existingEntry != null) {
+                    val domainEntry = existingEntry.toDomain()
+                    assetReferenceTracker.cleanupAssetReferences(domainEntry)
+                }
                 diaryEntryDao.deleteEntryByDate(user.id, change.date.toString())
             }
         }
+        return null
     }
     
     suspend fun getSyncStatus(): SyncStatus {
@@ -132,5 +155,76 @@ class SyncManager @Inject constructor(
     
     suspend fun hasPendingChanges(): Boolean {
         return syncRepository.hasPendingChanges()
+    }
+
+    /**
+     * Perform asset synchronization for diary entries
+     * @param diaryEntries List of diary entries to process for assets
+     */
+    private suspend fun performAssetSync(diaryEntries: List<com.example.geekdiary.domain.model.DiaryEntry>) {
+        try {
+            _syncStatus.value = _syncStatus.value.copy(assetSyncInProgress = true, assetSyncError = null)
+
+            // Process diary entries for asset detection and queuing
+            assetSyncManager.processDiaryEntriesAssets(diaryEntries)
+
+            // Track asset references
+            for (diaryEntry in diaryEntries) {
+                assetReferenceTracker.trackAssetReferences(diaryEntry)
+            }
+
+            // Start background asset downloads (limited concurrent downloads)
+            val downloadedCount = assetSyncManager.downloadPendingAssets(maxConcurrentDownloads = 2)
+
+            // Update asset sync status
+            val (pendingCount, downloadingCount, failedCount) = assetSyncManager.getPendingDownloadStats()
+
+            _syncStatus.value = _syncStatus.value.copy(
+                assetSyncInProgress = false,
+                pendingAssetDownloads = pendingCount + downloadingCount,
+                failedAssetDownloads = failedCount
+            )
+
+            println("Asset sync completed: $downloadedCount downloaded, $pendingCount pending, $failedCount failed")
+        } catch (e: Exception) {
+            _syncStatus.value = _syncStatus.value.copy(
+                assetSyncInProgress = false,
+                assetSyncError = e.message
+            )
+            println("Asset sync error: ${e.message}")
+        }
+    }
+
+    /**
+     * Perform background asset synchronization
+     * This can be called independently to download pending assets
+     */
+    suspend fun performBackgroundAssetSync(): NetworkResult<Unit> {
+        return try {
+            _syncStatus.value = _syncStatus.value.copy(assetSyncInProgress = true, assetSyncError = null)
+
+            // Download pending assets
+            val downloadedCount = assetSyncManager.downloadPendingAssets(maxConcurrentDownloads = 3)
+
+            // Retry failed downloads
+            val retriedCount = assetSyncManager.retryFailedDownloads()
+
+            // Update status
+            val (pendingCount, downloadingCount, failedCount) = assetSyncManager.getPendingDownloadStats()
+
+            _syncStatus.value = _syncStatus.value.copy(
+                assetSyncInProgress = false,
+                pendingAssetDownloads = pendingCount + downloadingCount,
+                failedAssetDownloads = failedCount
+            )
+
+            NetworkResult.Success(Unit)
+        } catch (e: Exception) {
+            _syncStatus.value = _syncStatus.value.copy(
+                assetSyncInProgress = false,
+                assetSyncError = e.message
+            )
+            NetworkResult.Error(com.example.geekdiary.data.remote.NetworkException.UnknownError(e))
+        }
     }
 }

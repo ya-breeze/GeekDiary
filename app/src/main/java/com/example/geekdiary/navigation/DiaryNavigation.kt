@@ -12,6 +12,7 @@ import com.example.geekdiary.presentation.auth.AuthState
 import com.example.geekdiary.presentation.auth.AuthViewModel
 import com.example.geekdiary.presentation.auth.LoginScreen
 import com.example.geekdiary.presentation.main.MainScreen
+import com.example.geekdiary.presentation.settings.SettingsScreen
 
 @Composable
 fun DiaryNavigation(
@@ -39,7 +40,20 @@ fun DiaryNavigation(
         }
         
         composable(DiaryDestinations.MAIN_ROUTE) {
-            MainScreen(authViewModel = authViewModel)
+            MainScreen(
+                authViewModel = authViewModel,
+                onNavigateToSettings = {
+                    navController.navigate(DiaryDestinations.SETTINGS_ROUTE)
+                }
+            )
+        }
+
+        composable(DiaryDestinations.SETTINGS_ROUTE) {
+            SettingsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
     
@@ -66,4 +80,5 @@ fun DiaryNavigation(
 object DiaryDestinations {
     const val LOGIN_ROUTE = "login"
     const val MAIN_ROUTE = "main"
+    const val SETTINGS_ROUTE = "settings"
 }

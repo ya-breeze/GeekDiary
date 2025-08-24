@@ -1,8 +1,10 @@
 package com.example.geekdiary.di
 
+import com.example.geekdiary.data.repository.AssetRepositoryImpl
 import com.example.geekdiary.data.repository.AuthRepositoryImpl
 import com.example.geekdiary.data.repository.DiaryRepositoryImpl
 import com.example.geekdiary.data.repository.SyncRepositoryImpl
+import com.example.geekdiary.domain.repository.AssetRepository
 import com.example.geekdiary.domain.repository.AuthRepository
 import com.example.geekdiary.domain.repository.DiaryRepository
 import com.example.geekdiary.domain.repository.SyncRepository
@@ -33,4 +35,10 @@ abstract class RepositoryModule {
     abstract fun bindSyncRepository(
         syncRepositoryImpl: SyncRepositoryImpl
     ): SyncRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAssetRepository(
+        assetRepositoryImpl: AssetRepositoryImpl
+    ): AssetRepository
 }

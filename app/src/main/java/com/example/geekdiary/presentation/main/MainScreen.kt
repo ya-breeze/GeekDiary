@@ -3,6 +3,7 @@ package com.example.geekdiary.presentation.main
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 
 import androidx.compose.runtime.*
@@ -21,7 +22,8 @@ import java.time.LocalDate
 @Composable
 fun MainScreen(
     viewModel: MainViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
+    onNavigateToSettings: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentDate by viewModel.currentDate.collectAsState()
@@ -42,6 +44,12 @@ fun MainScreen(
             TopAppBar(
                 title = { Text("GeekDiary") },
                 actions = {
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings"
+                        )
+                    }
                     IconButton(onClick = { authViewModel.logout() }) {
                         Icon(
                             imageVector = Icons.Default.ExitToApp,
