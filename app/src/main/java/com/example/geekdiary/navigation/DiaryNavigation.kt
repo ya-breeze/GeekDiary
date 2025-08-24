@@ -39,7 +39,7 @@ fun DiaryNavigation(
         }
         
         composable(DiaryDestinations.MAIN_ROUTE) {
-            MainScreen()
+            MainScreen(authViewModel = authViewModel)
         }
     }
     

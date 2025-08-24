@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.geekdiary.presentation.auth.AuthState
 import com.example.geekdiary.presentation.auth.AuthViewModel
 import com.example.geekdiary.ui.theme.GeekDiaryTheme
 import java.time.LocalDate
@@ -24,6 +25,15 @@ fun MainScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentDate by viewModel.currentDate.collectAsState()
+    val authState by authViewModel.authState.collectAsState()
+
+    // Trigger first-time sync when user logs in for the first time
+    LaunchedEffect(authState) {
+        val currentAuthState = authState
+        if (currentAuthState is AuthState.Authenticated && currentAuthState.isFirstLogin) {
+            viewModel.performFirstTimeSync()
+        }
+    }
 
 
 
@@ -49,6 +59,36 @@ fun MainScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Sync message
+            uiState.syncMessage?.let { syncMessage ->
+                if (uiState.isSyncing) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = syncMessage,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+                }
+            }
+
             // Date Display Component
             DateDisplayComponent(
                 currentDate = currentDate,

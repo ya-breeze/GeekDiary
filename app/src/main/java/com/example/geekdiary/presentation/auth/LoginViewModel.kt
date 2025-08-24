@@ -75,8 +75,8 @@ class LoginViewModel @Inject constructor(
     
     private fun validateEmail(email: String): String? {
         return when {
-            email.isBlank() -> "Email is required"
-            !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Invalid email format"
+            email.isBlank() -> "Email/Username is required"
+            email.length < 2 -> "Email/Username must be at least 2 characters"
             else -> null
         }
     }

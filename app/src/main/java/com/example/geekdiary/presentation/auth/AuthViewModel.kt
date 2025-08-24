@@ -69,6 +69,14 @@ class AuthViewModel @Inject constructor(
     }
     
     fun onLoginSuccess() {
-        checkAuthenticationStatus()
+        // Mark as first login and check authentication status
+        viewModelScope.launch {
+            val user = authRepository.getCurrentUser()
+            if (user != null) {
+                _authState.value = AuthState.Authenticated(user, isFirstLogin = true)
+            } else {
+                checkAuthenticationStatus()
+            }
+        }
     }
 }

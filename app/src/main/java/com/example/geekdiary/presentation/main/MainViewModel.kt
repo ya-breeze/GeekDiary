@@ -3,6 +3,8 @@ package com.example.geekdiary.presentation.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.geekdiary.data.remote.NetworkResult
+import com.example.geekdiary.data.sync.BackgroundSyncService
+import com.example.geekdiary.data.sync.SyncManager
 import com.example.geekdiary.domain.model.DiaryEntry
 import com.example.geekdiary.domain.repository.DiaryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,12 +19,16 @@ data class MainUiState(
     val isLoading: Boolean = false,
     val entry: DiaryEntry? = null,
     val errorMessage: String? = null,
-    val isRefreshing: Boolean = false
+    val isRefreshing: Boolean = false,
+    val isSyncing: Boolean = false,
+    val syncMessage: String? = null
 )
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val diaryRepository: DiaryRepository
+    private val diaryRepository: DiaryRepository,
+    private val syncManager: SyncManager,
+    private val backgroundSyncService: BackgroundSyncService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(MainUiState())
@@ -33,6 +39,7 @@ class MainViewModel @Inject constructor(
     
     init {
         loadEntryForCurrentDate()
+        observeSyncStatus()
     }
     
     fun navigateToPreviousDay() {
@@ -107,6 +114,58 @@ class MainViewModel @Inject constructor(
                     isLoading = false,
                     isRefreshing = false,
                     errorMessage = e.message ?: "Unknown error occurred"
+                )
+            }
+        }
+    }
+
+    fun performFirstTimeSync() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isSyncing = true,
+                syncMessage = "Syncing your diary entries..."
+            )
+
+            try {
+                when (val result = syncManager.performIncrementalSync()) {
+                    is NetworkResult.Success -> {
+                        _uiState.value = _uiState.value.copy(
+                            isSyncing = false,
+                            syncMessage = null
+                        )
+                        // Reload current entry after sync
+                        loadEntryForCurrentDate(forceRefresh = true)
+
+                        // Start background sync service
+                        backgroundSyncService.startBackgroundSync()
+                    }
+                    is NetworkResult.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isSyncing = false,
+                            syncMessage = null,
+                            errorMessage = "Sync failed: ${result.exception.message}"
+                        )
+                    }
+                    is NetworkResult.Loading -> {
+                        // Keep syncing state
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isSyncing = false,
+                    syncMessage = null,
+                    errorMessage = "Sync failed: ${e.message}"
+                )
+            }
+        }
+    }
+
+    private fun observeSyncStatus() {
+        viewModelScope.launch {
+            syncManager.syncStatus.collect { syncStatus ->
+                _uiState.value = _uiState.value.copy(
+                    isSyncing = syncStatus.isSyncing,
+                    syncMessage = if (syncStatus.isSyncing) "Syncing..." else null
                 )
             }
         }
