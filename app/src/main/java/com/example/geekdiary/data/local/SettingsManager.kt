@@ -28,6 +28,6 @@ class SettingsManager @Inject constructor(
     
     companion object {
         private const val KEY_SERVER_URL = "server_url"
-        private const val DEFAULT_SERVER_URL = "http://localhost:8080"
+        private const val DEFAULT_SERVER_URL = "http://172.18.0.1:8080"
     }
 }

@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class SettingsUiState(
-    val serverUrl: String = "http://localhost:8080",
+    val serverUrl: String = "http://172.18.0.1:8080",
     val isLoading: Boolean = false,
     val urlError: String? = null,
     val successMessage: String? = null

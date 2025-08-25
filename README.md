@@ -42,7 +42,7 @@ app/src/main/java/com/example/geekdiary/
 
 ## Backend API
 
-The app connects to a local backend running at `http://localhost:8080` with the following endpoints:
+The app connects to a local backend running at `http://172.18.0.1:8080` with the following endpoints:
 
 - `POST /v1/authorize` - Authentication
 - `GET /v1/user` - User profile
@@ -54,7 +54,7 @@ The app connects to a local backend running at `http://localhost:8080` with the 
 
 1. Clone the repository
 2. Open in Android Studio
-3. Ensure backend is running at `http://localhost:8080`
+3. Ensure backend is running at `http://172.18.0.1:8080`
 4. Build and run the app
 
 ## Testing

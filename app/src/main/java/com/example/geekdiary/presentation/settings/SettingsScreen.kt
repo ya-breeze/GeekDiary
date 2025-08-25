@@ -83,7 +83,7 @@ fun SettingsScreen(
                         value = serverUrl,
                         onValueChange = { serverUrl = it },
                         label = { Text("Server URL") },
-                        placeholder = { Text("http://localhost:8080") },
+                        placeholder = { Text("http://172.18.0.1:8080") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         isError = uiState.urlError != null
@@ -122,7 +122,7 @@ fun SettingsScreen(
                     )
                     
                     val presets = listOf(
-                        "Local Development" to "http://localhost:8080",
+                        "Local Development" to "http://172.18.0.1:8080",
                         "Local Network" to "http://192.168.1.100:8080",
                         "Production" to "https://your-diary-server.com"
                     )
